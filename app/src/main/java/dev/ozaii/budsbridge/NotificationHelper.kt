@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Bundle
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 
@@ -76,7 +77,7 @@ object NotificationHelper {
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-            .setRequestPromotedOngoing(true)
+            .addExtras(Bundle().apply { putBoolean(Notification.EXTRA_REQUEST_PROMOTED_ONGOING, true) })
             .setShortCriticalText(chip)
             .addAction(action(AncMode.ANC, R.string.anc_on))
             .addAction(action(AncMode.TRANSPARENCY, R.string.anc_transparency))
