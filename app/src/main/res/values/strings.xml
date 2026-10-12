@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Buds Bridge</string>
+    <string name="channel_name">Kulaklık durumu</string>
+    <string name="connected">Bağlandı</string>
+    <string name="label_left">Sol</string>
+    <string name="label_right">Sağ</string>
+    <string name="label_box">Kutu</string>
+    <string name="anc_on">ANC</string>
+    <string name="anc_transparency">Şeffaf</string>
+    <string name="anc_off">Kapalı</string>
+    <string name="anc_mode_fmt">Mod: %1$s</string>
+</resources>
