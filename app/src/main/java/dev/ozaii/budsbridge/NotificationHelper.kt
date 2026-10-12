@@ -77,7 +77,7 @@ object NotificationHelper {
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-            .addExtras(Bundle().apply { putBoolean(Notification.EXTRA_REQUEST_PROMOTED_ONGOING, true) })
+            .addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
             .setShortCriticalText(chip)
             .addAction(action(AncMode.ANC, R.string.anc_on))
             .addAction(action(AncMode.TRANSPARENCY, R.string.anc_transparency))
