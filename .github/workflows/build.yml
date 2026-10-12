@@ -1,6 +1,7 @@
 name: Build APK
 on:
   push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -13,7 +14,22 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: "8.11.1" }
-      - run: gradle assembleDebug --no-daemon
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: gradle assembleDebug --no-daemon --console=plain > build.log 2>&1
+      - name: Publish build log on failure
+        if: steps.build.outcome == 'failure'
+        run: |
+          tail -n 250 build.log > /tmp/build.log.txt
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan buildlog
+          git rm -rf . -q
+          cp /tmp/build.log.txt build.log.txt
+          git add build.log.txt
+          git commit -qm "build log"
+          git push -f origin buildlog
+          exit 1
       - uses: actions/upload-artifact@v4
         with:
           name: buds-bridge-debug-apk
