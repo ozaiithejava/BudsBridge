@@ -1,0 +1,14 @@
+<resources>
+    <color name="surface">@android:color/system_neutral1_900</color>
+    <color name="surface_container">@android:color/system_neutral2_800</color>
+    <color name="on_surface">@android:color/system_neutral1_100</color>
+    <color name="on_surface_variant">@android:color/system_neutral2_200</color>
+    <color name="outline">@android:color/system_neutral2_500</color>
+    <color name="track">@android:color/system_neutral2_700</color>
+    <color name="accent">@android:color/system_accent1_200</color>
+    <color name="on_accent">@android:color/system_accent1_800</color>
+    <color name="accent_container">@android:color/system_accent1_700</color>
+    <color name="on_accent_container">@android:color/system_accent1_100</color>
+    <color name="ok">#81C995</color>
+    <color name="low">#F2B8B5</color>
+</resources>

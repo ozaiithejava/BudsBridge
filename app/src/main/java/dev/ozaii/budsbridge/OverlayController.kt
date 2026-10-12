@@ -1,72 +1,134 @@
 package dev.ozaii.budsbridge
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.TextView
 
 /**
- * Fast Pair tarzı alt pop-up. Tüm çağrılar main thread'e post edilir.
- * Context olarak applicationContext ver; destroy() view'ı ve callback'leri temizler.
+ * Fast Pair tarzı alt sheet. Tüm çağrılar main thread'e post edilir.
+ * - Alttan kayarak + fade ile gelir, aşağı sürükleyerek kapatılır
+ * - Altta geri sayım çizgisi; dokununca otomatik kapanma durur
+ * Context olarak applicationContext kullanır; destroy() her şeyi temizler.
  */
 class OverlayController(context: Context) {
     private val ctx = context.applicationContext
     private val wm = ctx.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
-    private var view: View? = null
+    private val density = ctx.resources.displayMetrics.density
+
+    private var root: View? = null
+    private var countdown: View? = null
+    private var colLeft: BatteryCol? = null
+    private var colCase: BatteryCol? = null
+    private var colRight: BatteryCol? = null
     private val hideRunnable = Runnable { hide() }
 
     fun show(deviceName: String) = main.post {
-        if (view != null || !Settings.canDrawOverlays(ctx)) return@post
+        if (root != null || !Settings.canDrawOverlays(ctx)) return@post
 
         val v = LayoutInflater.from(ctx).inflate(R.layout.overlay_popup, null)
         v.findViewById<TextView>(R.id.tvName).text = deviceName
-        v.setOnClickListener { hide() }
+        colLeft = BatteryCol(v.findViewById(R.id.colLeft), R.drawable.buds_left, R.string.label_left)
+        colCase = BatteryCol(v.findViewById(R.id.colCase), R.drawable.buds_case, R.string.label_box)
+        colRight = BatteryCol(v.findViewById(R.id.colRight), R.drawable.buds_right, R.string.label_right)
+        listOf(colLeft, colCase, colRight).forEach { it?.bind(-1, false) }
+        countdown = v.findViewById(R.id.countdown)
+
+        v.findViewById<View>(R.id.btnDone).setOnClickListener { hide() }
+        v.findViewById<View>(R.id.btnSettings).setOnClickListener {
+            hide()
+            ctx.startActivity(Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        attachDrag(v, v.findViewById(R.id.card))
 
         val lp = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         ).apply { gravity = Gravity.BOTTOM }
 
         v.translationY = ctx.resources.displayMetrics.heightPixels.toFloat()
+        v.alpha = 0f
         runCatching { wm.addView(v, lp) }.onFailure { return@post }
-        view = v
-        v.animate().translationY(0f).setDuration(380)
-            .setInterpolator(DecelerateInterpolator(1.6f)).start()
+        root = v
+        v.animate().translationY(0f).alpha(1f).setDuration(420)
+            .setInterpolator(DecelerateInterpolator(1.8f)).start()
         scheduleHide(10_000)   // veri hiç gelmezse de kapansın
     }
 
     fun update(b: BudsBattery) = main.post {
-        val v = view ?: return@post
-        v.findViewById<TextView>(R.id.tvLeft).text = formatLevel(b.left, b.leftCharging)
-        v.findViewById<TextView>(R.id.tvRight).text = formatLevel(b.right, b.rightCharging)
-        v.findViewById<TextView>(R.id.tvBox).text = formatLevel(b.box, b.boxCharging)
+        colLeft?.bind(b.left, b.leftCharging)
+        colCase?.bind(b.box, b.boxCharging)
+        colRight?.bind(b.right, b.rightCharging)
     }
 
-    fun dismissAfter(ms: Long) = main.post { scheduleHide(ms) }
+    fun dismissAfter(ms: Long) = main.post { if (root != null) scheduleHide(ms) }
+
+    private fun attachDrag(rootView: View, card: View) {
+        var startY = 0f
+        card.setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    startY = e.rawY
+                    pauseHide()
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    rootView.translationY = (e.rawY - startY).coerceAtLeast(0f)
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (rootView.translationY > 72 * density) {
+                        hide()
+                    } else {
+                        rootView.animate().translationY(0f).setDuration(180).start()
+                        scheduleHide(3_000)
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+    }
 
     private fun scheduleHide(ms: Long) {
         main.removeCallbacks(hideRunnable)
         main.postDelayed(hideRunnable, ms)
+        countdown?.let {
+            it.animate().cancel()
+            it.pivotX = 0f
+            it.scaleX = 1f
+            it.animate().scaleX(0f).setDuration(ms).setInterpolator(LinearInterpolator()).start()
+        }
+    }
+
+    private fun pauseHide() {
+        main.removeCallbacks(hideRunnable)
+        countdown?.animate()?.cancel()
+        countdown?.scaleX = 1f
     }
 
     private fun hide() {
-        val v = view ?: return
-        view = null
+        val v = root ?: return
+        root = null
         main.removeCallbacks(hideRunnable)
-        v.animate().translationY(v.height.toFloat() + 100f).setDuration(260)
+        countdown?.animate()?.cancel()
+        countdown = null
+        v.animate().translationY(v.height.toFloat() + 120f).alpha(0f).setDuration(280)
             .setInterpolator(AccelerateInterpolator())
             .withEndAction { runCatching { wm.removeViewImmediate(v) } }
             .start()
@@ -74,10 +136,13 @@ class OverlayController(context: Context) {
 
     fun destroy() = main.post {
         main.removeCallbacks(hideRunnable)
-        view?.let { v ->
+        countdown?.animate()?.cancel()
+        root?.let { v ->
             v.animate().cancel()
             runCatching { wm.removeViewImmediate(v) }
         }
-        view = null
+        root = null
+        countdown = null
+        colLeft = null; colCase = null; colRight = null
     }
 }

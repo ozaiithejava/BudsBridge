@@ -1,3 +1,10 @@
 <resources>
-    <style name="Theme.BudsBridge" parent="@android:style/Theme.Material.Light.NoActionBar" />
+    <style name="Theme.BudsBridge" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>

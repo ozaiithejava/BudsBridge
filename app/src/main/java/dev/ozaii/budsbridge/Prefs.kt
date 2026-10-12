@@ -3,6 +3,7 @@ package dev.ozaii.budsbridge
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.content.Context
+import android.content.SharedPreferences
 
 class Prefs(context: Context) {
     private val sp = context.applicationContext
@@ -29,6 +30,9 @@ class Prefs(context: Context) {
         return nameFilter.isNotEmpty() && name.contains(nameFilter, ignoreCase = true)
     }
 
+    fun register(l: SharedPreferences.OnSharedPreferenceChangeListener) = sp.registerOnSharedPreferenceChangeListener(l)
+    fun unregister(l: SharedPreferences.OnSharedPreferenceChangeListener) = sp.unregisterOnSharedPreferenceChangeListener(l)
+
     // --- Widget için son bilinen batarya ---
     fun saveBattery(b: BudsBattery?) {
         sp.edit().apply {
@@ -53,6 +57,6 @@ class Prefs(context: Context) {
         const val DEFAULT_NAME = "OnePlus Buds 3"
         private const val K_NAME = "name"
         private const val K_MAC = "mac"
-        private const val K_BAT = "battery"
+        const val K_BAT = "battery"
     }
 }

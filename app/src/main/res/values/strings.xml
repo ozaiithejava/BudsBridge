@@ -9,4 +9,6 @@
     <string name="anc_transparency">Şeffaf</string>
     <string name="anc_off">Kapalı</string>
     <string name="anc_mode_fmt">Mod: %1$s</string>
+    <string name="btn_settings">Ayarlar</string>
+    <string name="btn_done">Tamam</string>
 </resources>

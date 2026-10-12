@@ -1,63 +1,128 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:padding="12dp">
 
     <LinearLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@drawable/bg_overlay"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:id="@+id/card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_sheet"
+        android:clipToOutline="true"
+        android:elevation="12dp"
+        android:orientation="vertical">
 
-        <TextView android:id="@+id/tvName"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:textColor="#FFFFFF"
-            android:textSize="18sp" android:textStyle="bold" />
+        <View
+            android:layout_width="32dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_grabber" />
 
         <TextView
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:text="@string/connected"
-            android:textColor="#B0B0B5" android:textSize="13sp" />
+            android:id="@+id/tvName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:textColor="@color/on_surface"
+            android:textSize="22sp"
+            android:fontFamily="sans-serif-medium" />
 
         <LinearLayout
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:orientation="horizontal">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:gravity="center" android:orientation="vertical">
-                <ImageView android:layout_width="32dp" android:layout_height="32dp"
-                    android:src="@drawable/ic_bud" android:tint="@color/accent" />
-                <TextView android:id="@+id/tvLeft"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="@string/label_left" android:textColor="#B0B0B5" android:textSize="12sp" />
-            </LinearLayout>
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_check_circle" />
 
-            <LinearLayout
-                android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:gravity="center" android:orientation="vertical">
-                <ImageView android:layout_width="32dp" android:layout_height="32dp"
-                    android:src="@drawable/ic_bud" android:tint="@color/accent" />
-                <TextView android:id="@+id/tvRight"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="@string/label_right" android:textColor="#B0B0B5" android:textSize="12sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:gravity="center" android:orientation="vertical">
-                <ImageView android:layout_width="32dp" android:layout_height="32dp"
-                    android:src="@drawable/ic_case" android:tint="@color/accent" />
-                <TextView android:id="@+id/tvBox"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="@string/label_box" android:textColor="#B0B0B5" android:textSize="12sp" />
-            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/connected"
+                android:textColor="@color/on_surface_variant"
+                android:textSize="14sp" />
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <include
+                android:id="@+id/colLeft"
+                layout="@layout/part_battery_col"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <include
+                android:id="@+id/colCase"
+                layout="@layout/part_battery_col"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2" />
+
+            <include
+                android:id="@+id/colRight"
+                layout="@layout/part_battery_col"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingTop="22dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp">
+
+            <Button
+                android:id="@+id/btnSettings"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_tonal"
+                android:stateListAnimator="@null"
+                android:text="@string/btn_settings"
+                android:textAllCaps="false"
+                android:textColor="@color/on_accent_container"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/btnDone"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_filled"
+                android:stateListAnimator="@null"
+                android:text="@string/btn_done"
+                android:textAllCaps="false"
+                android:textColor="@color/on_accent"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/countdown"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:background="@color/accent" />
     </LinearLayout>
 </FrameLayout>
