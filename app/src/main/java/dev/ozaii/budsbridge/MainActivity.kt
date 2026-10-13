@@ -276,9 +276,11 @@ class MainActivity : Activity() {
             granted = { has(Manifest.permission.POST_NOTIFICATIONS) }) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
         }
-        addRow(container, "Bildirim erişimi", "HeyMelody bildirimlerinden kutu bataryasını okumak için",
-            granted = { NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName) }) {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        if (BuildConfig.FLAVOR == "full") {
+            addRow(container, "Bildirim erişimi", "HeyMelody bildirimlerinden kutu bataryasını okumak için",
+                granted = { NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName) }) {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
         }
         addRow(container, "Diğer uygulamaların üzerinde göster", "Fast Pair tarzı pop-up için",
             granted = { Settings.canDrawOverlays(this) }) {

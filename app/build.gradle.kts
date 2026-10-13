@@ -14,6 +14,22 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+    buildFeatures { buildConfig = true }
+    flavorDimensions += "edition"
+    productFlavors {
+        // lite: bildirim erişimi yok -> Play Protect "hassas izin" engeline takılmaz
+        create("lite") { dimension = "edition" }
+        // full: HeyMelody bildirimlerinden kutu bataryası okuyabilir (Play Protect engelleyebilir)
+        create("full") { dimension = "edition"; versionNameSuffix = "-full" }
+    }
     buildTypes {
         release { isMinifyEnabled = false }
     }
