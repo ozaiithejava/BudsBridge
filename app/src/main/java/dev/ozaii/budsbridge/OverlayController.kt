@@ -14,7 +14,9 @@ import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.widget.ImageView
 import android.widget.TextView
+import android.graphics.drawable.AnimatedImageDrawable
 
 /**
  * Fast Pair tarzı alt sheet. Tüm çağrılar main thread'e post edilir.
@@ -29,6 +31,7 @@ class OverlayController(context: Context) {
     private var root: View? = null
     private var countdown: View? = null
     private var cols: List<BatteryCol> = emptyList()
+    private var hero: ImageView? = null
     private var colLeft: BatteryCol? = null
     private var colCase: BatteryCol? = null
     private var colRight: BatteryCol? = null
@@ -45,6 +48,15 @@ class OverlayController(context: Context) {
         colLeft = l; colCase = c; colRight = r
         cols = listOf(l, c, r)
         cols.forEach { it.setModel(ctx, modelId); it.bind(-1, false) }
+        val heroView = v.findViewById<ImageView>(R.id.heroImg)
+        if (AssetStore.find(ctx, modelId, Role.HERO) != null) {
+            val d = AssetStore.drawable(ctx, modelId, Role.HERO, R.drawable.buds_case)
+            heroView.setImageDrawable(d)
+            (d as? AnimatedImageDrawable)?.apply { repeatCount = AnimatedImageDrawable.REPEAT_INFINITE; start() }
+            heroView.visibility = View.VISIBLE
+            cols.forEach { it.setCompact(true) }
+            hero = heroView
+        }
         countdown = v.findViewById(R.id.countdown)
 
         v.findViewById<View>(R.id.btnDone).setOnClickListener { hide() }
@@ -113,7 +125,13 @@ class OverlayController(context: Context) {
         countdown?.scaleX = 1f
     }
 
+    private fun releaseHero(h: ImageView?) {
+        (h?.drawable as? AnimatedImageDrawable)?.stop()
+        h?.setImageDrawable(null)
+    }
+
     private fun releaseCols() {
+        releaseHero(hero); hero = null
         cols.forEach { it.release() }
         cols = emptyList(); colLeft = null; colCase = null; colRight = null
     }
@@ -125,11 +143,14 @@ class OverlayController(context: Context) {
         countdown?.animate()?.cancel()
         countdown = null
         val toRelease = cols
+        val heroToRelease = hero
+        hero = null
         cols = emptyList(); colLeft = null; colCase = null; colRight = null
         v.animate().translationY(v.height.toFloat() + 120f).alpha(0f).setDuration(280)
             .setInterpolator(AccelerateInterpolator())
             .withEndAction {
                 toRelease.forEach { it.release() }
+                releaseHero(heroToRelease)
                 runCatching { wm.removeViewImmediate(v) }
             }
             .start()

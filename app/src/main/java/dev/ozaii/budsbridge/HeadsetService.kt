@@ -5,7 +5,10 @@ import android.app.NotificationManager
 import android.app.Service
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
@@ -44,8 +47,21 @@ class HeadsetService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private val levelReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, i: Intent) {
+            val ex = i.extras?.keySet()?.joinToString { k -> "$k=${i.extras?.get(k)}" }
+            RxLog.add(c, "BROADCAST ${i.action} $ex")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
+        BatteryBus.sink = { b -> onBattery(b) }
+        ContextCompat.registerReceiver(
+            this, levelReceiver,
+            IntentFilter("android.bluetooth.device.action.BATTERY_LEVEL_CHANGED"),
+            ContextCompat.RECEIVER_EXPORTED
+        )
         prefs = Prefs(this)
         overlay = OverlayController(applicationContext)
         NotificationHelper.ensureChannel(this)
@@ -188,7 +204,21 @@ class HeadsetService : Service() {
 
     // ---------------- Durum güncellemeleri ----------------
 
-    private fun onBattery(b: BudsBattery) {
+    private fun merge(b: BudsBattery): BudsBattery {
+        val o = battery
+        return BudsBattery(
+            left = if (b.left >= 0) b.left else o.left,
+            right = if (b.right >= 0) b.right else o.right,
+            box = if (b.box >= 0) b.box else o.box,
+            leftCharging = if (b.left >= 0) b.leftCharging else o.leftCharging,
+            rightCharging = if (b.right >= 0) b.rightCharging else o.rightCharging,
+            boxCharging = if (b.box >= 0) b.boxCharging else o.boxCharging,
+        )
+    }
+
+    @Synchronized
+    private fun onBattery(raw: BudsBattery) {
+        val b = merge(raw)
         if (!firstFrame && b == battery) return
         battery = b
         prefs.saveBattery(b)
@@ -212,6 +242,8 @@ class HeadsetService : Service() {
     }
 
     override fun onDestroy() {
+        BatteryBus.sink = null
+        runCatching { unregisterReceiver(levelReceiver) }
         sessionJob?.cancel()
         scope.cancel()
         runCatching { socket?.close() }

@@ -16,6 +16,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
  */
 object BatteryReader {
     private const val TAG = "BatteryReader"
+    private const val MAIN_ICON = 5
     private const val L_ICON = 7
     private const val R_ICON = 8
     private const val C_ICON = 9
@@ -29,7 +30,7 @@ object BatteryReader {
     @Volatile private var exempted = false
     @Volatile var lastError: String = "yok"
 
-    private fun ensure() {
+    fun ensure() {
         if (exempted) return
         exempted = true
         runCatching { HiddenApiBypass.addHiddenApiExemptions("L") }
@@ -47,6 +48,15 @@ object BatteryReader {
         null
     }
 
+    fun metadataRaw(d: BluetoothDevice, key: Int): ByteArray? = try {
+        ensure()
+        val m = BluetoothDevice::class.java.getMethod("getMetadata", Int::class.javaPrimitiveType)
+        m.invoke(d, key) as? ByteArray
+    } catch (e: Throwable) {
+        lastError = "${e.javaClass.simpleName}: ${e.cause?.javaClass?.simpleName ?: e.message}"
+        null
+    }
+
     /** Sistemin tek değerli kulaklık bataryası (HFP/GATT). Sol/sağ/kutu ayrımı yok. */
     fun singleLevel(d: BluetoothDevice): Int? = try {
         ensure()
@@ -59,7 +69,7 @@ object BatteryReader {
 
     /** Özel RFCOMM kanalını pasif dinler (veri göndermez). Başka uygulama kanalı tutuyorsa bağlantı hata verir. */
     @SuppressLint("MissingPermission")
-    private fun probe(d: BluetoothDevice, uuid: java.util.UUID, ms: Long): String {
+    fun probe(d: BluetoothDevice, uuid: java.util.UUID, ms: Long): String {
         val sb = StringBuilder("probe $uuid: ")
         val sock = try {
             d.createRfcommSocketToServiceRecord(uuid)
@@ -114,7 +124,7 @@ object BatteryReader {
     /** Sistemin kayıtlı kulaklık ikonlarını (varsa) model paketine kaydeder. Mevcut görselin üzerine yazmaz. */
     fun fetchIcons(ctx: Context, d: BluetoothDevice, modelId: String, overwrite: Boolean = false): Int {
         var n = 0
-        for ((role, key) in listOf(Role.LEFT to L_ICON, Role.RIGHT to R_ICON, Role.CASE to C_ICON)) {
+        for ((role, key) in listOf(Role.HERO to MAIN_ICON, Role.LEFT to L_ICON, Role.RIGHT to R_ICON, Role.CASE to C_ICON)) {
             if (!overwrite && AssetStore.find(ctx, modelId, role) != null) continue
             val s = metadata(d, key)?.trim().orEmpty()
             if (s.isEmpty()) continue

@@ -39,6 +39,9 @@ class BatteryCol(
         img.setImageDrawable(null)
     }
 
+    /** Tek ana görsel varsa bud/kutu çizimlerini gizler; sadece yüzde + çubuk kalır. */
+    fun setCompact(on: Boolean) { img.visibility = if (on) View.GONE else View.VISIBLE }
+
     fun bind(level: Int, charging: Boolean) {
         pct.text = formatLevel(level, false)
         bolt.visibility = if (charging && level >= 0) View.VISIBLE else View.GONE

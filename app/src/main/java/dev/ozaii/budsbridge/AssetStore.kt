@@ -11,7 +11,7 @@ import android.util.Log
 import androidx.annotation.DrawableRes
 import java.io.File
 
-enum class Role(val key: String) { LEFT("left"), RIGHT("right"), CASE("case") }
+enum class Role(val key: String) { LEFT("left"), RIGHT("right"), CASE("case"), HERO("hero") }
 
 /**
  * Görsel çözümleme sırası: model paketi -> "default" paketi -> yerleşik vektör.
@@ -85,6 +85,7 @@ object AssetStore {
             "left" in n -> Role.LEFT
             "right" in n -> Role.RIGHT
             "case" in n || "box" in n || "charg" in n -> Role.CASE
+            "hero" in n || "main" in n || "product" in n -> Role.HERO
             else -> null
         }
     }

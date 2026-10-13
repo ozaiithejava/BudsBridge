@@ -77,6 +77,7 @@ object HeyMelodyExtractor {
             Role.LEFT -> (if ("left" in n) 4 else 0) + (if (lr.containsMatchIn(n)) 2 else 0)
             Role.RIGHT -> (if ("right" in n) 4 else 0) + (if (rr.containsMatchIn(n)) 2 else 0)
             Role.CASE -> if ("case" in n || "box" in n || "charg" in n) 4 else 0
+            Role.HERO -> 0
         }
     }
 
@@ -174,7 +175,7 @@ object HeyMelodyExtractor {
             sb.append("türler: ${cands.groupingBy { it.type }.eachCount()}\n")
 
             if (apply && model != null) {
-                for (role in Role.entries) {
+                for (role in Role.entries.filter { it != Role.HERO }) {
                     if (assigned.containsKey(role)) continue
                     val ranked = cands.map { it to score(it, model, role) }
                         .filter { it.second >= 5 }

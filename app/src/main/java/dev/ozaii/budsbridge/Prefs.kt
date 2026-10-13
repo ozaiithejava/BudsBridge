@@ -36,6 +36,8 @@ class Prefs(context: Context) {
         return isEnabled(device.address, name)
     }
 
+    fun debug(): String = sp.all.toString()
+
     fun register(l: SharedPreferences.OnSharedPreferenceChangeListener) = sp.registerOnSharedPreferenceChangeListener(l)
     fun unregister(l: SharedPreferences.OnSharedPreferenceChangeListener) = sp.unregisterOnSharedPreferenceChangeListener(l)
 

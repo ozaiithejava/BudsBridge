@@ -15,6 +15,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.graphics.drawable.AnimatedImageDrawable
+import androidx.core.app.NotificationManagerCompat
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -34,6 +36,7 @@ class MainActivity : Activity() {
     private lateinit var colRight: BatteryCol
     private lateinit var tvStatus: TextView
     private lateinit var tvDevice: TextView
+    private lateinit var heroImg: ImageView
     private val rows = mutableListOf<PermRow>()
     private val io: ExecutorService = Executors.newSingleThreadExecutor()
 
@@ -48,6 +51,7 @@ class MainActivity : Activity() {
 
         tvStatus = findViewById(R.id.tvStatus)
         tvDevice = findViewById(R.id.tvDevice)
+        heroImg = findViewById(R.id.heroImg)
         colLeft = BatteryCol(findViewById(R.id.colLeft), Role.LEFT, R.string.label_left, R.drawable.buds_left)
         colCase = BatteryCol(findViewById(R.id.colCase), Role.CASE, R.string.label_box, R.drawable.buds_case)
         colRight = BatteryCol(findViewById(R.id.colRight), Role.RIGHT, R.string.label_right, R.drawable.buds_right)
@@ -94,6 +98,8 @@ class MainActivity : Activity() {
     override fun onStop() {
         prefs.unregister(batteryListener)
         listOf(colLeft, colCase, colRight).forEach { it.release() }
+        (heroImg.drawable as? AnimatedImageDrawable)?.stop()
+        heroImg.setImageDrawable(null)
         super.onStop()
     }
 
@@ -116,6 +122,16 @@ class MainActivity : Activity() {
         colLeft.setModel(this, id)
         colCase.setModel(this, id)
         colRight.setModel(this, id)
+        val hasHero = AssetStore.find(this, id, Role.HERO) != null
+        if (hasHero) {
+            val d = AssetStore.drawable(this, id, Role.HERO, R.drawable.buds_case)
+            heroImg.setImageDrawable(d)
+            (d as? AnimatedImageDrawable)?.apply { repeatCount = AnimatedImageDrawable.REPEAT_INFINITE; start() }
+            heroImg.visibility = View.VISIBLE
+        } else {
+            heroImg.visibility = View.GONE
+        }
+        listOf(colLeft, colCase, colRight).forEach { it.setCompact(hasHero) }
     }
 
     private fun renderBattery() {
@@ -155,16 +171,13 @@ class MainActivity : Activity() {
     }
 
     private fun runReport() {
-        toast("Taranıyor…")
+        toast("Detaylı teşhis hazırlanıyor (~30 sn). Kulaklık bağlı ve HeyMelody açık olsun.")
         io.execute {
-            val r = runCatching { HeyMelodyExtractor.run(this, DeviceRegistry.byId(prefs.lastModel), apply = false) }
-            val diag = runCatching { BatteryReader.dump(this) }.getOrDefault("teşhis alınamadı")
+            val r = runCatching { Diagnostics.build(this, prefs) }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
-                r.onSuccess { res ->
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                        .putExtra(Intent.EXTRA_TEXT, (diag + "\n\n" + res.report).take(100_000))
-                    startActivity(Intent.createChooser(send, "Tarama raporu"))
+                r.onSuccess { text ->
+                    startActivity(Intent.createChooser(Diagnostics.shareIntent(this, text), "Teşhis raporu"))
                 }.onFailure { toast("Hata: ${it.message}") }
             }
         }
@@ -262,6 +275,10 @@ class MainActivity : Activity() {
         addRow(container, "Bildirimler", "Durum bildirimi ve ANC düğmeleri için",
             granted = { has(Manifest.permission.POST_NOTIFICATIONS) }) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
+        }
+        addRow(container, "Bildirim erişimi", "HeyMelody bildirimlerinden kutu bataryasını okumak için",
+            granted = { NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName) }) {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
         addRow(container, "Diğer uygulamaların üzerinde göster", "Fast Pair tarzı pop-up için",
             granted = { Settings.canDrawOverlays(this) }) {

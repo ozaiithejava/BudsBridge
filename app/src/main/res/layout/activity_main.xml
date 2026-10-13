@@ -59,6 +59,14 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <ImageView
+                android:id="@+id/heroImg"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginTop="12dp"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -182,7 +190,7 @@
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_btn_tonal"
             android:stateListAnimator="@null"
-            android:text="Tarama raporunu paylaş"
+            android:text="Detaylı teşhis raporu (dosya)"
             android:textAllCaps="false"
             android:textColor="@color/on_accent_container"
             android:textSize="15sp" />

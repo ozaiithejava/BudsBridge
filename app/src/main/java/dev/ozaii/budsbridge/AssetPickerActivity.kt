@@ -69,7 +69,7 @@ class AssetPickerActivity : Activity() {
     private fun assign(c: HeyMelodyExtractor.Cand) {
         AlertDialog.Builder(this)
             .setTitle(c.name)
-            .setItems(arrayOf("Sol", "Sağ", "Kutu")) { _, i ->
+            .setItems(arrayOf("Sol", "Sağ", "Kutu", "Ana görsel (tek resim)")) { _, i ->
                 val role = Role.entries[i]
                 io.execute {
                     val ok = HeyMelodyExtractor.saveCandidate(this, c, modelId, role)
