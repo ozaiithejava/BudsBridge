@@ -30,6 +30,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AssetPickerActivity"
+            android:exported="false" />
+
         <service
             android:name=".HeadsetService"
             android:exported="false"

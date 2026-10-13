@@ -19,11 +19,14 @@ object HeyMelodyExtractor {
 
     class Result(val packages: List<String>, val assigned: Map<Role, String>, val report: String)
 
-    private class Cand(val pkg: String, val res: Resources, val id: Int, val type: String, val name: String)
+    class Cand(val pkg: String, val res: Resources, val id: Int, val type: String, val name: String) {
+        val key get() = "$pkg:$id"
+    }
 
     private val WANTED = setOf("drawable", "mipmap", "raw")
     private val INTEREST = Regex("(?i)(bud|ear|head|case|box|tws|one ?plus|nord|left|right|anim|connect|pair|lottie)")
     private val NEGATIVE = Regex("^ic_|icon|btn|button|bg|background|shadow|selector|notif|widget|shape")
+    private val NOT_PRODUCT = Regex("head|wear|detect|person|face|guide|man|woman|user|tip|gesture")
     private val HINT = Regex("bud|ear|headset|tws")
 
     @Suppress("DEPRECATION")
@@ -84,10 +87,11 @@ object HeyMelodyExtractor {
         if (model != null && !model.key.contains("pro") && flat.contains("pro")) s -= 4
         if (HINT.containsMatchIn(n)) s += 1
         if (NEGATIVE.containsMatchIn(n)) s -= 3
+        if (NOT_PRODUCT.containsMatchIn(n)) s -= 5
         return s
     }
 
-    private fun save(ctx: Context, c: Cand, modelId: String, role: Role): Boolean {
+    fun saveCandidate(ctx: Context, c: Cand, modelId: String, role: Role): Boolean {
         val tv = TypedValue()
         try {
             c.res.getValue(c.id, tv, true)
@@ -117,6 +121,39 @@ object HeyMelodyExtractor {
         return false
     }
 
+    /** Elle seçim ekranı için: ilgili adlar önce, geri kalanlar sonra (en fazla 700 adet). */
+    fun candidates(ctx: Context): List<Cand> {
+        val all = findPackages(ctx).flatMap { collect(ctx, it) }
+        val (a, b) = all.partition { INTEREST.containsMatchIn(it.name) }
+        return (a + b).take(700)
+    }
+
+    /** Küçük önizleme; çözülemezse null. */
+    fun thumb(c: Cand, heightPx: Int): Bitmap? = try {
+        val tv = TypedValue()
+        c.res.getValue(c.id, tv, true)
+        val ext = tv.string?.toString().orEmpty().substringAfterLast('.', "").lowercase()
+        if (ext in AssetStore.EXT) {
+            val bytes = c.res.openRawResource(c.id, tv).use { it.readBytes() }
+            val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)
+            o.inSampleSize = (o.outHeight / heightPx).coerceAtLeast(1)
+            o.inJustDecodeBounds = false
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)
+        } else if (c.type != "raw") {
+            val d = c.res.getDrawable(c.id, null)
+            val w = d.intrinsicWidth.takeIf { it > 0 } ?: heightPx
+            val h = d.intrinsicHeight.takeIf { it > 0 } ?: heightPx
+            val k = heightPx.toFloat() / h
+            val bmp = Bitmap.createBitmap((w * k).toInt().coerceAtLeast(1), heightPx, Bitmap.Config.ARGB_8888)
+            d.setBounds(0, 0, bmp.width, bmp.height)
+            d.draw(Canvas(bmp))
+            bmp
+        } else null
+    } catch (e: Throwable) {
+        null
+    }
+
     /** apply=true ise bulunan en iyi görselleri [model] paketine kaydeder; her durumda rapor üretir. */
     fun run(ctx: Context, model: BudsModel?, apply: Boolean): Result {
         val pkgs = findPackages(ctx)
@@ -139,7 +176,7 @@ object HeyMelodyExtractor {
                         .filter { it.second >= 5 }
                         .sortedByDescending { it.second }
                     for ((c, _) in ranked) {
-                        if (save(ctx, c, model.id, role)) {
+                        if (saveCandidate(ctx, c, model.id, role)) {
                             assigned[role] = "${c.pkg}:${c.type}/${c.name}"
                             break
                         }

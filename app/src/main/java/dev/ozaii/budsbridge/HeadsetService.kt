@@ -27,6 +27,7 @@ class HeadsetService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var sessionJob: Job? = null
+    private var metaJob: Job? = null
     private var currentAddress: String? = null
 
     @Volatile private var socket: BluetoothSocket? = null
@@ -64,6 +65,7 @@ class HeadsetService : Service() {
                 prefs.lastModel = model.id
                 startFg()
                 sessionJob?.cancel()
+                metaJob?.cancel()
                 currentAddress = "demo"
                 overlay.show(deviceName, model.id)
                 sessionJob = scope.launch {
@@ -92,6 +94,8 @@ class HeadsetService : Service() {
                 overlay.show(deviceName, model.id)
                 sessionJob?.cancel()
                 sessionJob = scope.launch { runSession(device) }
+                metaJob?.cancel()
+                metaJob = scope.launch { pollMetadata(device) }
             }
         }
         return START_NOT_STICKY
@@ -148,6 +152,16 @@ class HeadsetService : Service() {
         }
     }
 
+    /** Sistem metadata'sından batarya + ikon; RFCOMM protokolü çalışmasa da veri sağlar. */
+    @SuppressLint("MissingPermission")
+    private suspend fun pollMetadata(device: BluetoothDevice) {
+        BatteryReader.fetchIcons(applicationContext, device, model.id)
+        while (currentCoroutineContext().isActive) {
+            BatteryReader.read(device)?.let(::onBattery)
+            delay(4_000)
+        }
+    }
+
     private fun send(frame: ByteArray) {
         val s = socket ?: return
         scope.launch {
@@ -169,6 +183,7 @@ class HeadsetService : Service() {
     // ---------------- Durum güncellemeleri ----------------
 
     private fun onBattery(b: BudsBattery) {
+        if (!firstFrame && b == battery) return
         battery = b
         prefs.saveBattery(b)
         BudsWidgetProvider.refreshAll(this)

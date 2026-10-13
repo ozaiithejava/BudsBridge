@@ -128,6 +128,30 @@
             android:textSize="13sp" />
 
         <Button
+            android:id="@+id/btnMeta"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_btn_tonal"
+            android:stateListAnimator="@null"
+            android:text="Sistemden görselleri al (Bluetooth)"
+            android:textAllCaps="false"
+            android:textColor="@color/on_accent_container"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btnPick"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_btn_tonal"
+            android:stateListAnimator="@null"
+            android:text="HeyMelody görsellerinden elle seç"
+            android:textAllCaps="false"
+            android:textColor="@color/on_accent_container"
+            android:textSize="15sp" />
+
+        <Button
             android:id="@+id/btnHey"
             android:layout_width="match_parent"
             android:layout_height="48dp"

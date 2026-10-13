@@ -60,6 +60,12 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.btnHey).setOnClickListener { pickModel { runExtract(it) } }
         findViewById<Button>(R.id.btnReport).setOnClickListener { runReport() }
+        findViewById<Button>(R.id.btnPick).setOnClickListener {
+            pickModel { m ->
+                startActivity(Intent(this, AssetPickerActivity::class.java).putExtra(AssetPickerActivity.EXTRA_MODEL, m.id))
+            }
+        }
+        findViewById<Button>(R.id.btnMeta).setOnClickListener { fetchSystemIcons() }
         findViewById<Button>(R.id.btnReset).setOnClickListener {
             AssetStore.clearAll(this)
             applyAssets()
@@ -152,12 +158,36 @@ class MainActivity : Activity() {
         toast("Taranıyor…")
         io.execute {
             val r = runCatching { HeyMelodyExtractor.run(this, DeviceRegistry.byId(prefs.lastModel), apply = false) }
+            val diag = runCatching { BatteryReader.dump(this) }.getOrDefault("teşhis alınamadı")
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 r.onSuccess { res ->
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, res.report)
+                    val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                        .putExtra(Intent.EXTRA_TEXT, (res.report + "\n\n" + diag).take(100_000))
                     startActivity(Intent.createChooser(send, "Tarama raporu"))
                 }.onFailure { toast("Hata: ${it.message}") }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchSystemIcons() {
+        if (!has(Manifest.permission.BLUETOOTH_CONNECT)) { toast("Önce Bluetooth izni ver"); return }
+        io.execute {
+            var n = 0
+            runCatching {
+                val adapter = getSystemService(BluetoothManager::class.java)?.adapter
+                for (d in adapter?.bondedDevices.orEmpty()) {
+                    val m = DeviceRegistry.match(d.name) ?: continue
+                    val k = BatteryReader.fetchIcons(this, d, m.id, overwrite = true)
+                    if (k > 0) { n += k; prefs.lastModel = m.id }
+                }
+            }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                toast(if (n > 0) "Sistemden $n görsel alındı" else "Sistem görsel sağlamıyor. Elle seç ya da raporu paylaş.")
+                applyAssets()
+                BudsWidgetProvider.refreshAll(this)
             }
         }
     }
