@@ -64,7 +64,15 @@ object NotificationHelper {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         fun action(mode: AncMode, label: Int) = Notification.Action.Builder(
-            Icon.createWithResource(ctx, R.drawable.ic_bud), ctx.getString(label), ancAction(ctx, mode)
+            Icon.createWithResource(
+                ctx,
+                when (mode) {
+                    AncMode.ANC -> R.drawable.ic_anc
+                    AncMode.TRANSPARENCY -> R.drawable.ic_transparency
+                    AncMode.OFF -> R.drawable.ic_anc_off
+                }
+            ),
+            ctx.getString(label), ancAction(ctx, mode)
         ).build()
 
         return Notification.Builder(ctx, CHANNEL_ID)

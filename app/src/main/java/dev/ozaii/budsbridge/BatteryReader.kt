@@ -27,6 +27,7 @@ object BatteryReader {
     private const val C_CHG = 15
 
     @Volatile private var exempted = false
+    @Volatile var lastError: String = "yok"
 
     private fun ensure() {
         if (exempted) return
@@ -41,8 +42,58 @@ object BatteryReader {
         val m = BluetoothDevice::class.java.getMethod("getMetadata", Int::class.javaPrimitiveType)
         (m.invoke(d, key) as? ByteArray)?.let { String(it) }
     } catch (e: Throwable) {
-        Log.w(TAG, "getMetadata($key) hata: ${e.javaClass.simpleName}")
+        lastError = "${e.javaClass.simpleName}: ${e.cause?.javaClass?.simpleName ?: e.message}"
+        Log.w(TAG, "getMetadata($key) hata: $lastError")
         null
+    }
+
+    /** Sistemin tek değerli kulaklık bataryası (HFP/GATT). Sol/sağ/kutu ayrımı yok. */
+    fun singleLevel(d: BluetoothDevice): Int? = try {
+        ensure()
+        val m = BluetoothDevice::class.java.getMethod("getBatteryLevel")
+        (m.invoke(d) as? Int)?.takeIf { it in 0..100 }
+    } catch (e: Throwable) {
+        lastError = "getBatteryLevel: ${e.javaClass.simpleName}: ${e.cause?.javaClass?.simpleName ?: e.message}"
+        null
+    }
+
+    /** Özel RFCOMM kanalını pasif dinler (veri göndermez). Başka uygulama kanalı tutuyorsa bağlantı hata verir. */
+    @SuppressLint("MissingPermission")
+    private fun probe(d: BluetoothDevice, uuid: java.util.UUID, ms: Long): String {
+        val sb = StringBuilder("probe $uuid: ")
+        val sock = try {
+            d.createRfcommSocketToServiceRecord(uuid)
+        } catch (e: Exception) {
+            return sb.append("soket açılamadı: ${e.message}\n").toString()
+        }
+        val closer = Thread {
+            try { Thread.sleep(ms + 6000) } catch (_: InterruptedException) { return@Thread }
+            runCatching { sock.close() }
+        }.apply { isDaemon = true }
+        try {
+            closer.start()
+            sock.connect()
+            sb.append("bağlandı; ")
+            val ins = sock.inputStream
+            val end = System.currentTimeMillis() + ms
+            val buf = ByteArray(512)
+            var got = 0
+            while (System.currentTimeMillis() < end) {
+                if (ins.available() > 0) {
+                    val n = ins.read(buf)
+                    if (n < 0) break
+                    sb.append("RX ${Protocol.hex(buf.copyOf(n))}; ")
+                    got++
+                } else Thread.sleep(100)
+            }
+            if (got == 0) sb.append("veri gelmedi")
+        } catch (e: Exception) {
+            sb.append("hata: ${e.javaClass.simpleName}: ${e.message}")
+        } finally {
+            runCatching { sock.close() }
+            closer.interrupt()
+        }
+        return sb.append("\n").toString()
     }
 
     fun read(d: BluetoothDevice): BudsBattery? {
@@ -95,6 +146,10 @@ object BatteryReader {
                 sb.append("meta[$k]=${v.take(120)}\n")
             }
             sb.append("okunan batarya: ${read(d)}\n")
+            sb.append("tek seviye (getBatteryLevel): ${singleLevel(d)}\n")
+            sb.append("son hata: $lastError\n")
+            for (u in HeadsetService.RFCOMM_UUIDS) sb.append(probe(d, u, 5_000))
+            sb.append("-- rx.log --\n${RxLog.tail(ctx)}\n")
         }
         return sb.toString()
     }

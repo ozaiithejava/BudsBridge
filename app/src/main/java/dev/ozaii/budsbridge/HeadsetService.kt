@@ -117,14 +117,18 @@ class HeadsetService : Service() {
         while (currentCoroutineContext().isActive && attempt < MAX_RETRY) {
             var s: BluetoothSocket? = null
             try {
-                s = device.createRfcommSocketToServiceRecord(SPP_UUID)
+                val uuid = RFCOMM_UUIDS[attempt % RFCOMM_UUIDS.size]
+                RxLog.add(this, "bağlanıyor $uuid")
+                s = device.createRfcommSocketToServiceRecord(uuid)
                 socket = s
                 s.connect()
                 attempt = 0
-                send(Protocol.requestBattery())
+                RxLog.add(this, "bağlandı $uuid")
+                // Gerçek protokol bilinmiyor: veri göndermeden pasif dinle.
                 readLoop(s)
             } catch (e: IOException) {
                 Log.w(TAG, "RFCOMM hata (deneme ${attempt + 1})", e)
+                RxLog.add(this, "hata: ${e.message}")
             } catch (e: SecurityException) {
                 Log.e(TAG, "BLUETOOTH_CONNECT izni yok", e)
                 break
@@ -144,6 +148,7 @@ class HeadsetService : Service() {
         while (currentCoroutineContext().isActive) {
             val n = input.read(buf)          // blocking; socket.close() ile kırılır
             if (n < 0) break
+            RxLog.add(this, "RX " + Protocol.hex(buf.copyOf(n)))
             for (frame in assembler.feed(buf, n)) {
                 Log.d(TAG, "RX ${Protocol.hex(frame)}")
                 Protocol.parseBattery(frame)?.let(::onBattery)
@@ -157,7 +162,8 @@ class HeadsetService : Service() {
     private suspend fun pollMetadata(device: BluetoothDevice) {
         BatteryReader.fetchIcons(applicationContext, device, model.id)
         while (currentCoroutineContext().isActive) {
-            BatteryReader.read(device)?.let(::onBattery)
+            (BatteryReader.read(device)
+                ?: BatteryReader.singleLevel(device)?.let { BudsBattery(it, it, -1) })?.let(::onBattery)
             delay(4_000)
         }
     }
@@ -228,7 +234,10 @@ class HeadsetService : Service() {
         private const val EXTRA_ANC = "anc"
 
         /** TODO: HeyMelody trafiğinden doğrulanacak gerçek SPP UUID. Şimdilik standart SPP. */
-        private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+        val RFCOMM_UUIDS: List<UUID> = listOf(
+            UUID.fromString("0000079a-d102-11e1-9b23-00025b00a5a5"),
+            UUID.fromString("df21fe2c-2515-4fdb-8886-f12c4d67927c"),
+        )
 
         fun connectIntent(ctx: Context, d: BluetoothDevice) =
             Intent(ctx, HeadsetService::class.java).putExtra(EXTRA_DEVICE, d)
