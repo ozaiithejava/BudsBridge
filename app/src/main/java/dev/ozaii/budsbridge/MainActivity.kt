@@ -163,7 +163,7 @@ class MainActivity : Activity() {
                 if (isDestroyed) return@runOnUiThread
                 r.onSuccess { res ->
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                        .putExtra(Intent.EXTRA_TEXT, (res.report + "\n\n" + diag).take(100_000))
+                        .putExtra(Intent.EXTRA_TEXT, (diag + "\n\n" + res.report).take(100_000))
                     startActivity(Intent.createChooser(send, "Tarama raporu"))
                 }.onFailure { toast("Hata: ${it.message}") }
             }

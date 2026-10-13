@@ -24,7 +24,9 @@ object HeyMelodyExtractor {
     }
 
     private val WANTED = setOf("drawable", "mipmap", "raw")
-    private val INTEREST = Regex("(?i)(bud|ear|head|case|box|tws|one ?plus|nord|left|right|anim|connect|pair|lottie)")
+    private val INTEREST = Regex("(?i)(bud|earph|earb|headset|case|box|tws|one ?plus|nord|left|right|connect|pair|lottie|device|product|model)")
+    /** Arayüz kütüphanesi (coui) animasyon kareleri vb. — hiçbir zaman ilgili değil. */
+    private val JUNK = Regex("^\\$|coui|__\\d+$")
     private val NEGATIVE = Regex("^ic_|icon|btn|button|bg|background|shadow|selector|notif|widget|shape")
     private val NOT_PRODUCT = Regex("head|wear|detect|person|face|guide|man|woman|user|tip|gesture")
     private val HINT = Regex("bud|ear|headset|tws")
@@ -123,7 +125,7 @@ object HeyMelodyExtractor {
 
     /** Elle seçim ekranı için: ilgili adlar önce, geri kalanlar sonra (en fazla 700 adet). */
     fun candidates(ctx: Context): List<Cand> {
-        val all = findPackages(ctx).flatMap { collect(ctx, it) }
+        val all = findPackages(ctx).flatMap { collect(ctx, it) }.filter { !JUNK.containsMatchIn(it.name) }
         val (a, b) = all.partition { INTEREST.containsMatchIn(it.name) }
         return (a + b).take(700)
     }
@@ -166,8 +168,10 @@ object HeyMelodyExtractor {
         for (ai in pkgs) {
             val label = ctx.packageManager.getApplicationLabel(ai)
             val ver = runCatching { ctx.packageManager.getPackageInfo(ai.packageName, 0).versionName }.getOrNull()
-            val cands = collect(ctx, ai)
-            sb.append("== ${ai.packageName} ($label, v$ver): ${cands.size} drawable/mipmap/raw\n")
+            val all = collect(ctx, ai)
+            val cands = all.filter { !JUNK.containsMatchIn(it.name) }
+            sb.append("== ${ai.packageName} ($label, v$ver): toplam ${all.size}, arayüz-dışı ${cands.size}\n")
+            sb.append("türler: ${cands.groupingBy { it.type }.eachCount()}\n")
 
             if (apply && model != null) {
                 for (role in Role.entries) {
@@ -183,7 +187,11 @@ object HeyMelodyExtractor {
                     }
                 }
             }
-            cands.filter { INTEREST.containsMatchIn(it.name) }.take(500)
+            sb.append("-- ilgili adlar --\n")
+            cands.filter { INTEREST.containsMatchIn(it.name) }.take(400)
+                .forEach { sb.append("  ${it.type}/${it.name}\n") }
+            sb.append("-- diğer adlar (ilk 250) --\n")
+            cands.filter { !INTEREST.containsMatchIn(it.name) }.take(250)
                 .forEach { sb.append("  ${it.type}/${it.name}\n") }
         }
         if (assigned.isNotEmpty()) {
