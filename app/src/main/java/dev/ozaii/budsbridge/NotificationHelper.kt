@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 
@@ -31,12 +32,12 @@ object NotificationHelper {
     }
 
     /** Android 16+ (OxygenOS 16 Live Alerts) -> promoted ongoing; aksi halde özel RemoteViews. */
-    fun build(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?): Notification {
+    fun build(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?, showAnc: Boolean = true): Notification {
         if (Build.VERSION.SDK_INT >= 36) {
             val nm = ctx.getSystemService(NotificationManager::class.java)
-            if (nm.canPostPromotedNotifications()) return buildPromoted(ctx, deviceName, b, anc)
+            if (nm.canPostPromotedNotifications()) return buildPromoted(ctx, deviceName, b, anc, showAnc)
         }
-        return buildCustom(ctx, deviceName, b, anc)
+        return buildCustom(ctx, deviceName, b, anc, showAnc)
     }
 
     private fun summary(b: BudsBattery) =
@@ -54,7 +55,7 @@ object NotificationHelper {
      * ongoing + contentTitle + setRequestPromotedOngoing gerekir. Durum çubuğu chip'i = shortCriticalText.
      */
     @android.annotation.SuppressLint("NewApi")
-    private fun buildPromoted(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?): Notification {
+    private fun buildPromoted(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?, showAnc: Boolean): Notification {
         val text = summary(b)
         val lowest = listOf(b.left, b.right).filter { it >= 0 }.minOrNull()
         val chip = if (lowest != null) "$lowest%" else "…"
@@ -79,13 +80,17 @@ object NotificationHelper {
             .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
             .addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
             .setShortCriticalText(chip)
-            .addAction(action(AncMode.ANC, R.string.anc_on))
-            .addAction(action(AncMode.TRANSPARENCY, R.string.anc_transparency))
-            .addAction(action(AncMode.OFF, R.string.anc_off))
+            .apply {
+                if (showAnc) {
+                    addAction(action(AncMode.ANC, R.string.anc_on))
+                    addAction(action(AncMode.TRANSPARENCY, R.string.anc_transparency))
+                    addAction(action(AncMode.OFF, R.string.anc_off))
+                }
+            }
             .build()
     }
 
-    private fun buildCustom(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?): Notification {
+    private fun buildCustom(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?, showAnc: Boolean): Notification {
         val collapsed = RemoteViews(ctx.packageName, R.layout.notif_collapsed).also { bind(ctx, it, b) }
 
         val expanded = RemoteViews(ctx.packageName, R.layout.notif_expanded).also { rv ->
@@ -100,6 +105,10 @@ object NotificationHelper {
             rv.setOnClickPendingIntent(R.id.btnAnc, ancAction(ctx, AncMode.ANC))
             rv.setOnClickPendingIntent(R.id.btnTransparency, ancAction(ctx, AncMode.TRANSPARENCY))
             rv.setOnClickPendingIntent(R.id.btnOff, ancAction(ctx, AncMode.OFF))
+            if (!showAnc) {
+                listOf(R.id.btnAnc, R.id.btnTransparency, R.id.btnOff, R.id.tvAnc)
+                    .forEach { rv.setViewVisibility(it, View.GONE) }
+            }
         }
 
         val open = PendingIntent.getActivity(

@@ -38,6 +38,7 @@ class HeadsetService : Service() {
     private var deviceName = Prefs.DEFAULT_NAME
     private var battery = BudsBattery()
     private var anc: AncMode? = null
+    private var model: BudsModel = DeviceRegistry.generic
     private var firstFrame = true
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -58,10 +59,13 @@ class HeadsetService : Service() {
             }
 
             ACTION_DEMO -> {
+                model = DeviceRegistry.byId(prefs.lastModel) ?: DeviceRegistry.buds3
+                deviceName = model.displayName
+                prefs.lastModel = model.id
                 startFg()
                 sessionJob?.cancel()
                 currentAddress = "demo"
-                overlay.show(deviceName)
+                overlay.show(deviceName, model.id)
                 sessionJob = scope.launch {
                     delay(800)
                     onBattery(BudsBattery(82, 79, 64, leftCharging = false, rightCharging = true))
@@ -80,10 +84,12 @@ class HeadsetService : Service() {
                     return START_NOT_STICKY
                 }
                 deviceName = try { device.name } catch (_: SecurityException) { null } ?: deviceName
+                model = DeviceRegistry.match(deviceName) ?: DeviceRegistry.generic
+                prefs.lastModel = model.id
                 currentAddress = device.address
                 firstFrame = true
                 startFg()
-                overlay.show(deviceName)
+                overlay.show(deviceName, model.id)
                 sessionJob?.cancel()
                 sessionJob = scope.launch { runSession(device) }
             }
@@ -94,7 +100,7 @@ class HeadsetService : Service() {
     private fun startFg() {
         ServiceCompat.startForeground(
             this, NotificationHelper.NOTIF_ID,
-            NotificationHelper.build(this, deviceName, battery, anc),
+            NotificationHelper.build(this, deviceName, battery, anc, model.hasAnc),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         )
     }
@@ -181,7 +187,7 @@ class HeadsetService : Service() {
 
     private fun notifyUpdate() {
         getSystemService(NotificationManager::class.java)
-            .notify(NotificationHelper.NOTIF_ID, NotificationHelper.build(this, deviceName, battery, anc))
+            .notify(NotificationHelper.NOTIF_ID, NotificationHelper.build(this, deviceName, battery, anc, model.hasAnc))
     }
 
     override fun onDestroy() {

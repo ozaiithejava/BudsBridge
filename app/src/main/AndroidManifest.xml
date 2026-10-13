@@ -5,6 +5,8 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- HeyMelody uygulamasını bulup kendi görsellerini okumak için -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- Overlay izni: pop-up + arka plandan foreground service başlatma muafiyeti -->
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />

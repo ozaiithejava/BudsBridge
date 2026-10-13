@@ -46,7 +46,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
-                    android:text="OnePlus Buds 3"
+                    android:id="@+id/tvDevice"
+                    android:text="OnePlus Buds"
                     android:textColor="@color/on_surface"
                     android:textSize="18sp" />
 
@@ -96,49 +97,82 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginTop="24dp"
-            android:text="Cihaz eşleşmesi"
+            android:text="Cihazlar"
             android:textColor="@color/accent"
             android:textSize="14sp"
             android:fontFamily="sans-serif-medium" />
 
-        <EditText
-            android:id="@+id/etName"
+        <LinearLayout
+            android:id="@+id/deviceContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_input"
-            android:hint="Cihaz adı filtresi"
-            android:inputType="text"
-            android:maxLines="1"
-            android:padding="14dp"
-            android:textColor="@color/on_surface"
-            android:textColorHint="@color/on_surface_variant"
-            android:textSize="15sp" />
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
 
-        <EditText
-            android:id="@+id/etMac"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="24dp"
+            android:text="Görseller"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Kulaklık görselleri telefondaki HeyMelody uygulamasından alınır; yoksa yerleşik çizim kullanılır."
+            android:textColor="@color/on_surface_variant"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnHey"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
             android:layout_marginTop="10dp"
-            android:background="@drawable/bg_input"
-            android:hint="MAC (opsiyonel) AA:BB:CC:DD:EE:FF"
-            android:inputType="textCapCharacters"
-            android:maxLines="1"
-            android:padding="14dp"
-            android:textColor="@color/on_surface"
-            android:textColorHint="@color/on_surface_variant"
+            android:background="@drawable/bg_btn_tonal"
+            android:stateListAnimator="@null"
+            android:text="HeyMelody'den görselleri al"
+            android:textAllCaps="false"
+            android:textColor="@color/on_accent_container"
             android:textSize="15sp" />
 
         <Button
-            android:id="@+id/btnSave"
+            android:id="@+id/btnImport"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_btn_filled"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_btn_tonal"
             android:stateListAnimator="@null"
-            android:text="Kaydet"
+            android:text="Dosyadan içe aktar (left / right / case)"
             android:textAllCaps="false"
-            android:textColor="@color/on_accent"
+            android:textColor="@color/on_accent_container"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btnReport"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_btn_tonal"
+            android:stateListAnimator="@null"
+            android:text="Tarama raporunu paylaş"
+            android:textAllCaps="false"
+            android:textColor="@color/on_accent_container"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btnReset"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_btn_tonal"
+            android:stateListAnimator="@null"
+            android:text="Görselleri sıfırla"
+            android:textAllCaps="false"
+            android:textColor="@color/on_accent_container"
             android:textSize="15sp" />
 
         <LinearLayout

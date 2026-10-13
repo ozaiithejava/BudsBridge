@@ -18,9 +18,7 @@ import android.widget.TextView
 
 /**
  * Fast Pair tarzı alt sheet. Tüm çağrılar main thread'e post edilir.
- * - Alttan kayarak + fade ile gelir, aşağı sürükleyerek kapatılır
- * - Altta geri sayım çizgisi; dokununca otomatik kapanma durur
- * Context olarak applicationContext kullanır; destroy() her şeyi temizler.
+ * Context olarak applicationContext kullanır; destroy() view, animasyon ve callback'leri temizler.
  */
 class OverlayController(context: Context) {
     private val ctx = context.applicationContext
@@ -30,20 +28,23 @@ class OverlayController(context: Context) {
 
     private var root: View? = null
     private var countdown: View? = null
+    private var cols: List<BatteryCol> = emptyList()
     private var colLeft: BatteryCol? = null
     private var colCase: BatteryCol? = null
     private var colRight: BatteryCol? = null
     private val hideRunnable = Runnable { hide() }
 
-    fun show(deviceName: String) = main.post {
+    fun show(deviceName: String, modelId: String?) = main.post {
         if (root != null || !Settings.canDrawOverlays(ctx)) return@post
 
         val v = LayoutInflater.from(ctx).inflate(R.layout.overlay_popup, null)
         v.findViewById<TextView>(R.id.tvName).text = deviceName
-        colLeft = BatteryCol(v.findViewById(R.id.colLeft), R.drawable.buds_left, R.string.label_left)
-        colCase = BatteryCol(v.findViewById(R.id.colCase), R.drawable.buds_case, R.string.label_box)
-        colRight = BatteryCol(v.findViewById(R.id.colRight), R.drawable.buds_right, R.string.label_right)
-        listOf(colLeft, colCase, colRight).forEach { it?.bind(-1, false) }
+        val l = BatteryCol(v.findViewById(R.id.colLeft), Role.LEFT, R.string.label_left, R.drawable.buds_left)
+        val c = BatteryCol(v.findViewById(R.id.colCase), Role.CASE, R.string.label_box, R.drawable.buds_case)
+        val r = BatteryCol(v.findViewById(R.id.colRight), Role.RIGHT, R.string.label_right, R.drawable.buds_right)
+        colLeft = l; colCase = c; colRight = r
+        cols = listOf(l, c, r)
+        cols.forEach { it.setModel(ctx, modelId); it.bind(-1, false) }
         countdown = v.findViewById(R.id.countdown)
 
         v.findViewById<View>(R.id.btnDone).setOnClickListener { hide() }
@@ -63,11 +64,12 @@ class OverlayController(context: Context) {
 
         v.translationY = ctx.resources.displayMetrics.heightPixels.toFloat()
         v.alpha = 0f
-        runCatching { wm.addView(v, lp) }.onFailure { return@post }
+        runCatching { wm.addView(v, lp) }.onFailure { releaseCols(); return@post }
         root = v
         v.animate().translationY(0f).alpha(1f).setDuration(420)
             .setInterpolator(DecelerateInterpolator(1.8f)).start()
-        scheduleHide(10_000)   // veri hiç gelmezse de kapansın
+        cols.forEachIndexed { i, col -> col.enter(140L + i * 80L) }
+        scheduleHide(10_000)
     }
 
     fun update(b: BudsBattery) = main.post {
@@ -82,22 +84,11 @@ class OverlayController(context: Context) {
         var startY = 0f
         card.setOnTouchListener { _, e ->
             when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    startY = e.rawY
-                    pauseHide()
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    rootView.translationY = (e.rawY - startY).coerceAtLeast(0f)
-                    true
-                }
+                MotionEvent.ACTION_DOWN -> { startY = e.rawY; pauseHide(); true }
+                MotionEvent.ACTION_MOVE -> { rootView.translationY = (e.rawY - startY).coerceAtLeast(0f); true }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (rootView.translationY > 72 * density) {
-                        hide()
-                    } else {
-                        rootView.animate().translationY(0f).setDuration(180).start()
-                        scheduleHide(3_000)
-                    }
+                    if (rootView.translationY > 72 * density) hide()
+                    else { rootView.animate().translationY(0f).setDuration(180).start(); scheduleHide(3_000) }
                     true
                 }
                 else -> false
@@ -122,15 +113,25 @@ class OverlayController(context: Context) {
         countdown?.scaleX = 1f
     }
 
+    private fun releaseCols() {
+        cols.forEach { it.release() }
+        cols = emptyList(); colLeft = null; colCase = null; colRight = null
+    }
+
     private fun hide() {
         val v = root ?: return
         root = null
         main.removeCallbacks(hideRunnable)
         countdown?.animate()?.cancel()
         countdown = null
+        val toRelease = cols
+        cols = emptyList(); colLeft = null; colCase = null; colRight = null
         v.animate().translationY(v.height.toFloat() + 120f).alpha(0f).setDuration(280)
             .setInterpolator(AccelerateInterpolator())
-            .withEndAction { runCatching { wm.removeViewImmediate(v) } }
+            .withEndAction {
+                toRelease.forEach { it.release() }
+                runCatching { wm.removeViewImmediate(v) }
+            }
             .start()
     }
 
@@ -143,6 +144,6 @@ class OverlayController(context: Context) {
         }
         root = null
         countdown = null
-        colLeft = null; colCase = null; colRight = null
+        releaseCols()
     }
 }

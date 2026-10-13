@@ -41,7 +41,7 @@
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical">
             <ImageView android:layout_width="wrap_content" android:layout_height="44dp"
-                android:adjustViewBounds="true" android:scaleType="fitCenter" android:src="@drawable/buds_left" />
+                android:adjustViewBounds="true" android:scaleType="fitCenter" android:id="@+id/imgLeft" />
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
                 <ImageView android:id="@+id/boltLeft" android:layout_width="12dp" android:layout_height="12dp"
@@ -58,7 +58,7 @@
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical">
             <ImageView android:layout_width="wrap_content" android:layout_height="44dp"
-                android:adjustViewBounds="true" android:scaleType="fitCenter" android:src="@drawable/buds_case" />
+                android:adjustViewBounds="true" android:scaleType="fitCenter" android:id="@+id/imgCase" />
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
                 <ImageView android:id="@+id/boltBox" android:layout_width="12dp" android:layout_height="12dp"
@@ -75,7 +75,7 @@
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:gravity="center_horizontal" android:orientation="vertical">
             <ImageView android:layout_width="wrap_content" android:layout_height="44dp"
-                android:adjustViewBounds="true" android:scaleType="fitCenter" android:src="@drawable/buds_right" />
+                android:adjustViewBounds="true" android:scaleType="fitCenter" android:id="@+id/imgRight" />
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
                 <ImageView android:id="@+id/boltRight" android:layout_width="12dp" android:layout_height="12dp"
