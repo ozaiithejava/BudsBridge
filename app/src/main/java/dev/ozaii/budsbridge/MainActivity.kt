@@ -136,7 +136,7 @@ class MainActivity : Activity() {
     private fun renderBattery() {
         val b = prefs.loadBattery()
         tvStatus.text = if (b != null) "Bağlı" else "Bağlı değil"
-        val s = b ?: BudsBattery()
+        val s = b ?: prefs.loadLastKnown() ?: BudsBattery()
         colLeft.bind(s.left, s.leftCharging)
         colCase.bind(s.box, s.boxCharging)
         colRight.bind(s.right, s.rightCharging)

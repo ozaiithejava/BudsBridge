@@ -24,7 +24,7 @@ class BudsWidgetProvider : AppWidgetProvider() {
 
         private fun update(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
             val saved = Prefs(ctx).loadBattery()
-            val b = saved ?: BudsBattery()
+            val b = saved ?: Prefs(ctx).loadLastKnown() ?: BudsBattery()
             val open = PendingIntent.getActivity(
                 ctx, 0, Intent(ctx, MainActivity::class.java),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

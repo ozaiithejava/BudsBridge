@@ -49,8 +49,17 @@ class Prefs(context: Context) {
         }.apply()
     }
 
-    fun loadBattery(): BudsBattery? {
-        val p = sp.getString(K_BAT, null)?.split(",") ?: return null
+    /** Son bilinen değerler: kutu kapağı kapalıyken kulaklık kutu bataryasını göndermez, eski değer gösterilir. */
+    fun saveLastKnown(b: BudsBattery) {
+        sp.edit().putString(K_LAST, "${b.left},${b.right},${b.box},${b.leftCharging},${b.rightCharging},${b.boxCharging}").apply()
+    }
+
+    fun loadLastKnown(): BudsBattery? = parse(sp.getString(K_LAST, null))
+
+    fun loadBattery(): BudsBattery? = parse(sp.getString(K_BAT, null))
+
+    private fun parse(s: String?): BudsBattery? {
+        val p = s?.split(",") ?: return null
         if (p.size != 6) return null
         return BudsBattery(
             p[0].toIntOrNull() ?: -1, p[1].toIntOrNull() ?: -1, p[2].toIntOrNull() ?: -1,
@@ -61,6 +70,7 @@ class Prefs(context: Context) {
     companion object {
         const val DEFAULT_NAME = "OnePlus Buds"
         const val K_BAT = "battery"
+        private const val K_LAST = "last_known"
         private const val K_MODEL = "last_model"
         private const val K_TRUSTED = "trusted"
         private const val K_BLOCKED = "blocked"

@@ -81,17 +81,13 @@ object Diagnostics {
                 sb.append("   read(): ${BatteryReader.read(d)}\n")
                 sb.append("   getBatteryLevel: ${BatteryReader.singleLevel(d)}\n")
                 sb.append("   son metadata hatası: ${BatteryReader.lastError}\n")
-                for (u in HeadsetService.RFCOMM_UUIDS) sb.append("   ").append(BatteryReader.probe(d, u, 5_000))
+                if (HeadsetService.rfcommUp) {
+                    sb.append("   probe atlandı: servis OPO kanalına zaten bağlı (kanal tek istemci kabul eder)\n")
+                } else {
+                    for (u in HeadsetService.RFCOMM_UUIDS) sb.append("   ").append(BatteryReader.probe(d, u, 5_000))
+                }
             }
         }
-
-        h("HeyMelody / sistem melody paketleri")
-        for (ai in HeyMelodyExtractor.findPackages(ctx)) {
-            val v = runCatching { ctx.packageManager.getPackageInfo(ai.packageName, 0).versionName }.getOrNull()
-            sb.append("${ai.packageName} v$v\n")
-        }
-        sb.append(runCatching { HeyMelodyExtractor.run(ctx, DeviceRegistry.byId(prefs.lastModel), apply = false).report.take(30_000) }
-            .getOrElse { "kaynak taraması hata: ${it.message}" }).append('\n')
 
         h("rx.log (RFCOMM / yayınlar)")
         sb.append(RxLog.tail(ctx, RxLog.RX)).append('\n')
@@ -104,6 +100,14 @@ object Diagnostics {
             val p = ProcessBuilder("logcat", "-d", "-t", "600").redirectErrorStream(true).start()
             p.inputStream.bufferedReader().readText().takeLast(60_000)
         }.getOrElse { "logcat okunamadı: ${it.message}" }).append('\n')
+
+        h("HeyMelody / sistem melody paketleri")
+        for (ai in HeyMelodyExtractor.findPackages(ctx)) {
+            val v = runCatching { ctx.packageManager.getPackageInfo(ai.packageName, 0).versionName }.getOrNull()
+            sb.append("${ai.packageName} v$v\n")
+        }
+        sb.append(runCatching { HeyMelodyExtractor.run(ctx, DeviceRegistry.byId(prefs.lastModel), apply = false).report.take(6_000) }
+            .getOrElse { "kaynak taraması hata: ${it.message}" }).append('\n')
 
         return sb.toString().take(300_000)
     }
