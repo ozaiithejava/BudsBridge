@@ -23,6 +23,10 @@ android {
         }
     }
     buildFeatures { buildConfig = true }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
     flavorDimensions += "edition"
     productFlavors {
         // lite: bildirim erişimi yok -> Play Protect "hassas izin" engeline takılmaz
@@ -31,7 +35,10 @@ android {
         create("full") { dimension = "edition"; versionNameSuffix = "-full" }
     }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

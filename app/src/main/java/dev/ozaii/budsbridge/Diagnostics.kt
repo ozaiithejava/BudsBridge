@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -46,7 +45,7 @@ object Diagnostics {
         sb.append("BLUETOOTH_CONNECT: ${granted(Manifest.permission.BLUETOOTH_CONNECT)}\n")
         sb.append("POST_NOTIFICATIONS: ${granted(Manifest.permission.POST_NOTIFICATIONS)}\n")
         sb.append("overlay: ${Settings.canDrawOverlays(ctx)}\n")
-        sb.append("bildirim erişimi: ${NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)}\n")
+        sb.append("bildirim erişimi: ${ListenerSupport.enabled(ctx)}\n")
         if (Build.VERSION.SDK_INT >= 36) {
             sb.append("promoted (Live Alert): ${ctx.getSystemService(NotificationManager::class.java).canPostPromotedNotifications()}\n")
         }

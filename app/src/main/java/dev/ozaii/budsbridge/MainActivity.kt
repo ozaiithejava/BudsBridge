@@ -16,7 +16,6 @@ import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.graphics.drawable.AnimatedImageDrawable
-import androidx.core.app.NotificationManagerCompat
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -278,8 +277,8 @@ class MainActivity : Activity() {
         }
         if (BuildConfig.FLAVOR == "full") {
             addRow(container, "Bildirim erişimi", "HeyMelody bildirimlerinden kutu bataryasını okumak için",
-                granted = { NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName) }) {
-                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                granted = { ListenerSupport.enabled(this) }) {
+                ListenerSupport.openSettings(this)
             }
         }
         addRow(container, "Diğer uygulamaların üzerinde göster", "Fast Pair tarzı pop-up için",
