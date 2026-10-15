@@ -131,7 +131,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Kulaklık görselleri telefondaki HeyMelody uygulamasından alınır; yoksa yerleşik çizim kullanılır."
+            android:text="HeyMelody'de kulaklık sayfasının ekran görüntüsünü al, aşağıdaki ilk butonla seç: ürün görseli otomatik kesilir ve arka planı şeffaf yapılır."
             android:textColor="@color/on_surface_variant"
             android:textSize="13sp" />
 
@@ -142,7 +142,7 @@
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_btn_tonal"
             android:stateListAnimator="@null"
-            android:text="Sistemden görselleri al (Bluetooth)"
+            android:text="Ekran görüntüsünden ana görsel al (önerilen)"
             android:textAllCaps="false"
             android:textColor="@color/on_accent_container"
             android:textSize="15sp" />
@@ -155,18 +155,6 @@
             android:background="@drawable/bg_btn_tonal"
             android:stateListAnimator="@null"
             android:text="HeyMelody görsellerinden elle seç"
-            android:textAllCaps="false"
-            android:textColor="@color/on_accent_container"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/btnHey"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_btn_tonal"
-            android:stateListAnimator="@null"
-            android:text="HeyMelody'den görselleri al"
             android:textAllCaps="false"
             android:textColor="@color/on_accent_container"
             android:textSize="15sp" />

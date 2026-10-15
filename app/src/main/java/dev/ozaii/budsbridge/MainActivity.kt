@@ -61,14 +61,18 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.btnStop).setOnClickListener {
             stopService(Intent(this, HeadsetService::class.java))
         }
-        findViewById<Button>(R.id.btnHey).setOnClickListener { pickModel { runExtract(it) } }
         findViewById<Button>(R.id.btnReport).setOnClickListener { runReport() }
         findViewById<Button>(R.id.btnPick).setOnClickListener {
             pickModel { m ->
                 startActivity(Intent(this, AssetPickerActivity::class.java).putExtra(AssetPickerActivity.EXTRA_MODEL, m.id))
             }
         }
-        findViewById<Button>(R.id.btnMeta).setOnClickListener { fetchSystemIcons() }
+        findViewById<Button>(R.id.btnMeta).setOnClickListener {
+            toast("HeyMelody'de kulaklık sayfasını açıp ekran görüntüsü al, sonra onu seç")
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
+            @Suppress("DEPRECATION")
+            startActivityForResult(i, REQ_SHOT)
+        }
         findViewById<Button>(R.id.btnReset).setOnClickListener {
             AssetStore.clearAll(this)
             applyAssets()
@@ -204,9 +208,28 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun importScreenshot(uri: Uri) {
+        toast("Görsel kesiliyor…")
+        val modelId = prefs.lastModel ?: DeviceRegistry.buds3.id
+        io.execute {
+            val ok = runCatching { HeroExtractor.fromScreenshot(this, uri, modelId) }.getOrDefault(false)
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                toast(if (ok) "Ana görsel kaydedildi" else "Ürün görseli bulunamadı. HeyMelody cihaz sayfasının tam ekran görüntüsünü seç.")
+                if (ok) prefs.lastModel = modelId
+                applyAssets()
+                BudsWidgetProvider.refreshAll(this)
+            }
+        }
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_SHOT && resultCode == RESULT_OK && data?.data != null) {
+            importScreenshot(data.data!!)
+            return
+        }
         if (requestCode != REQ_PICK || resultCode != RESULT_OK || data == null) return
         val uris = mutableListOf<Uri>()
         data.data?.let { uris += it }
@@ -324,5 +347,6 @@ class MainActivity : Activity() {
 
     private companion object {
         const val REQ_PICK = 42
+        const val REQ_SHOT = 43
     }
 }

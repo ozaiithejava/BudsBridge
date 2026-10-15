@@ -106,6 +106,14 @@ object Diagnostics {
             val v = runCatching { ctx.packageManager.getPackageInfo(ai.packageName, 0).versionName }.getOrNull()
             sb.append("${ai.packageName} v$v\n")
         }
+        for (pkg in listOf("com.heytap.headset", "com.oplus.melody")) {
+            runCatching {
+                val pi = ctx.packageManager.getPackageInfo(pkg, PackageManager.GET_PROVIDERS)
+                pi.providers?.forEach {
+                    sb.append("provider $pkg ${it.authority} exported=${it.exported} read=${it.readPermission} grantUri=${it.grantUriPermissions}\n")
+                }
+            }.onFailure { sb.append("provider listesi alınamadı ($pkg): ${it.message}\n") }
+        }
         sb.append(runCatching { HeyMelodyExtractor.run(ctx, DeviceRegistry.byId(prefs.lastModel), apply = false).report.take(6_000) }
             .getOrElse { "kaynak taraması hata: ${it.message}" }).append('\n')
 

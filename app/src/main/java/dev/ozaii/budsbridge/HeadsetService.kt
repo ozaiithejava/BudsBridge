@@ -38,6 +38,7 @@ class HeadsetService : Service() {
     private val writeLock = Any()
     private val seq = AtomicInteger(0)
     @Volatile private var haveProtocol = false
+    @Volatile private var handshakeDone = false
 
     private lateinit var overlay: OverlayController
     private lateinit var prefs: Prefs
@@ -147,6 +148,7 @@ class HeadsetService : Service() {
                 s.connect()
                 attempt = 0
                 rfcommUp = true
+                handshakeDone = false
                 RxLog.add(this, "bağlandı $uuid")
                 worker = scope.launch {
                     initSequence()
@@ -169,25 +171,27 @@ class HeadsetService : Service() {
                 if (socket === s) socket = null
             }
             attempt++
-            delay(2_000L * attempt)
+            delay(400L * attempt)
         }
     }
 
     /** Belgelenmiş açılış sırası: el sıkışma, ürün, yayın kodları, abonelik, ANC, batarya, takılma. */
     private suspend fun initSequence() {
-        delay(300)
+        // el sıkışma yanıtı gelir gelmez (en fazla 500 ms) devam et; batarya sorgusu en öne alındı
+        sendCmd(Opo.CMD_HANDSHAKE)
+        var waited = 0
+        while (!handshakeDone && waited < 500) { delay(15); waited += 15 }
         val steps = listOf(
-            Opo.CMD_HANDSHAKE to ByteArray(0),
-            Opo.CMD_PRODUCT to ByteArray(0),
-            Opo.CMD_BCAST_CODES to ByteArray(0),
+            Opo.CMD_BATTERY to ByteArray(0),
             Opo.CMD_SUBSCRIBE to byteArrayOf(0x03, 0x01, 0x02, 0x03),  // pil + takılma + ANC bildirimleri
             Opo.CMD_ANC_QUERY to byteArrayOf(0x01, 0x01),
-            Opo.CMD_BATTERY to ByteArray(0),
             Opo.CMD_WEAR to ByteArray(0),
+            Opo.CMD_PRODUCT to ByteArray(0),
+            Opo.CMD_BCAST_CODES to ByteArray(0),
         )
         for ((cmd, payload) in steps) {
             sendCmd(cmd, payload)
-            delay(200)
+            delay(40)
         }
     }
 
@@ -200,6 +204,7 @@ class HeadsetService : Service() {
             if (n < 0) break
             for (f in assembler.feed(buf, n)) {
                 RxLog.add(this, "RX cmd=0x%04X seq=%d pl=%s".format(f.cmd, f.seq, Protocol.hex(f.payload)))
+                if (f.cmd == (Opo.CMD_HANDSHAKE or Opo.RESP)) handshakeDone = true
                 Opo.parseBattery(f)?.let {
                     haveProtocol = true
                     onBattery(it)
@@ -240,9 +245,8 @@ class HeadsetService : Service() {
     /** Protokol çalışmazsa (kanal başka uygulamada): sistemin tek değerli bataryası. */
     @SuppressLint("MissingPermission")
     private suspend fun pollFallback(device: BluetoothDevice) {
-        BatteryReader.fetchIcons(applicationContext, device, model.id)
         while (currentCoroutineContext().isActive) {
-            delay(4_000)
+            delay(1_500)
             if (!haveProtocol) BatteryReader.singleLevel(device)?.let { onBattery(BudsBattery(it, it, -1)) }
         }
     }
