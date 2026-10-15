@@ -18,7 +18,8 @@ object HeroExtractor {
     private const val GAP = 14        // aynı bölütte sayılacak boş satır toleransı
     private const val PAD = 8
 
-    fun fromScreenshot(ctx: Context, uri: Uri, modelId: String): Boolean {
+    /** Başarıda null, başarısızlıkta kullanıcıya gösterilecek hata metni. */
+    fun fromScreenshot(ctx: Context, uri: Uri, modelId: String): String? {
         val bmp = ImageDecoder.decodeBitmap(ImageDecoder.createSource(ctx.contentResolver, uri)) { dec, _, _ ->
             dec.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         }
@@ -34,7 +35,8 @@ object HeroExtractor {
             val c = px[y * w + 6] and 0xFFFFFF
             counts[c] = (counts[c] ?: 0) + 1
         }
-        val bg = counts.maxByOrNull { it.value }?.key ?: return false
+        val bg = counts.maxByOrNull { it.value }?.key ?: return "Zemin rengi bulunamadı"
+        RxLog.add(ctx, "HERO ${w}x$h bg=#%06X".format(bg))
         val br = (bg shr 16) and 0xFF
         val bgG = (bg shr 8) and 0xFF
         val bb = bg and 0xFF
@@ -68,7 +70,8 @@ object HeroExtractor {
                 if (bs < 0 || last - s > be - bs) { bs = s; be = last }
             } else y++
         }
-        if (bs < 0 || be - bs < h * 0.08) return false
+        RxLog.add(ctx, "HERO en yüksek bölüt: $bs..$be (yükseklik ${be - bs + 1}, gereken ${(h * 0.08).toInt()})")
+        if (bs < 0 || be - bs < h * 0.08) return "Ürün görseli bulunamadı. HeyMelody'de kulaklık sayfasını (büyük ürün görseli görünen ekranı) tam ekran görüntüle."
 
         // sütun sınırları
         var cx0 = w
@@ -78,7 +81,7 @@ object HeroExtractor {
             for (yy in bs..be) if (diff(px[yy * w + x]) > T) { c++; if (c > 1) break }
             if (c > 1) { if (x < cx0) cx0 = x; if (x > cx1) cx1 = x }
         }
-        if (cx1 < 0) return false
+        if (cx1 < 0) return "Ürün sınırları bulunamadı"
         val x0 = max(0, cx0 - PAD)
         val x1 = minOf(w - 1, cx1 + PAD)
         val y0 = max(0, bs - PAD)
@@ -135,7 +138,8 @@ object HeroExtractor {
         val bos = ByteArrayOutputStream()
         result.compress(Bitmap.CompressFormat.PNG, 100, bos)
         AssetStore.saveBytes(ctx, modelId, Role.HERO, "png", bos.toByteArray())
-        return true
+        RxLog.add(ctx, "HERO kaydedildi: $modelId ${result.width}x${result.height}")
+        return null
     }
 
     private fun nearOutside(vis: BooleanArray, w: Int, h: Int, x: Int, y: Int): Boolean {

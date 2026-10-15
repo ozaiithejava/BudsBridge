@@ -12,6 +12,20 @@ class Prefs(context: Context) {
         get() = sp.getString(K_MODEL, null)
         set(v) = sp.edit().putString(K_MODEL, v).apply()
 
+    /** Canlı uyarı (kamera adası chip'i). Kapalıysa normal bildirim. */
+    var liveAlert: Boolean
+        get() = sp.getBoolean("live_alert", true)
+        set(v) = sp.edit().putBoolean("live_alert", v).apply()
+
+    var popup: Boolean
+        get() = sp.getBoolean("popup", true)
+        set(v) = sp.edit().putBoolean("popup", v).apply()
+
+    /** Sessiz arka plan izleme servisi (bağlantıyı anında yakalar). */
+    var monitor: Boolean
+        get() = sp.getBoolean("monitor", true)
+        set(v) = sp.edit().putBoolean("monitor", v).apply()
+
     private fun set(key: String): Set<String> = sp.getStringSet(key, emptySet()) ?: emptySet()
 
     /** Otomatik: OnePlus ailesinden bir isim ya da kullanıcının elle açtığı cihaz. Elle kapatılanlar hariç. */

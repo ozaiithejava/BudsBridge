@@ -89,6 +89,7 @@ class MainActivity : Activity() {
         }
 
         buildRows()
+        buildToggles()
     }
 
     override fun onStart() {
@@ -110,11 +111,51 @@ class MainActivity : Activity() {
         super.onResume()
         refreshRows()
         refreshDevices()
+        autoStart()
     }
 
     override fun onDestroy() {
         io.shutdownNow()
         super.onDestroy()
+    }
+
+    // ---------------- Anahtarlar & otomatik başlatma ----------------
+
+    private fun buildToggles() {
+        val c = findViewById<LinearLayout>(R.id.toggleContainer)
+        addToggle(c, "Canlı uyarı (kamera adası)", "Durum çubuğunda kulaklık yüzdesi; kapalıysa normal bildirim", prefs.liveAlert) { on ->
+            prefs.liveAlert = on
+            if (HeadsetService.running) {
+                startService(Intent(this, HeadsetService::class.java).setAction(HeadsetService.ACTION_REFRESH))
+            }
+        }
+        addToggle(c, "Bağlanınca pop-up", "Alttan açılan batarya kartı", prefs.popup) { prefs.popup = it }
+        addToggle(c, "Sürekli izleme (hızlı)", "Sessiz arka plan servisi; bağlantıyı anında yakalar", prefs.monitor) { on ->
+            prefs.monitor = on
+            if (on) autoStart() else stopService(Intent(this, MonitorService::class.java))
+        }
+    }
+
+    private fun addToggle(c: LinearLayout, title: String, desc: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+        val v = layoutInflater.inflate(R.layout.device_row, c, false)
+        v.findViewById<TextView>(R.id.devTitle).text = title
+        v.findViewById<TextView>(R.id.devDesc).text = desc
+        v.findViewById<Switch>(R.id.devSwitch).apply {
+            isChecked = checked
+            setOnCheckedChangeListener { _, on -> onChange(on) }
+        }
+        c.addView(v)
+    }
+
+    /** Uygulama açılınca: izleme servisini başlat ve zaten bağlı kulaklık varsa oturumu başlat. */
+    private fun autoStart() {
+        if (!has(Manifest.permission.BLUETOOTH_CONNECT)) return
+        if (prefs.monitor && !MonitorService.running) {
+            ContextCompat.startForegroundService(this, Intent(this, MonitorService::class.java))
+        }
+        ConnectedScan.run(this) { d ->
+            if (prefs.matches(d)) ContextCompat.startForegroundService(this, HeadsetService.connectIntent(this, d))
+        }
     }
 
     // ---------------- Görseller ----------------
@@ -212,11 +253,12 @@ class MainActivity : Activity() {
         toast("Görsel kesiliyor…")
         val modelId = prefs.lastModel ?: DeviceRegistry.buds3.id
         io.execute {
-            val ok = runCatching { HeroExtractor.fromScreenshot(this, uri, modelId) }.getOrDefault(false)
+            val err = runCatching { HeroExtractor.fromScreenshot(this, uri, modelId) }
+                .getOrElse { "Hata: ${it.javaClass.simpleName}: ${it.message}" }
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
-                toast(if (ok) "Ana görsel kaydedildi" else "Ürün görseli bulunamadı. HeyMelody cihaz sayfasının tam ekran görüntüsünü seç.")
-                if (ok) prefs.lastModel = modelId
+                toast(err ?: "Ana görsel kaydedildi")
+                if (err == null) prefs.lastModel = modelId
                 applyAssets()
                 BudsWidgetProvider.refreshAll(this)
             }
@@ -341,6 +383,7 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         refreshRows()
         refreshDevices()
+        autoStart()
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()

@@ -88,6 +88,23 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginTop="28dp"
+            android:text="Görünüm"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <LinearLayout
+            android:id="@+id/toggleContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="20dp"
             android:text="İzinler"
             android:textColor="@color/accent"
             android:textSize="14sp"

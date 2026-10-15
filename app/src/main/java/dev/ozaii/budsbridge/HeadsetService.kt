@@ -60,6 +60,7 @@ class HeadsetService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        running = true
         prefs = Prefs(this)
         overlay = OverlayController(applicationContext)
         battery = prefs.loadLastKnown() ?: BudsBattery()
@@ -80,6 +81,8 @@ class HeadsetService : Service() {
                 if (mode != null) setAnc(mode)
             }
 
+            ACTION_REFRESH -> notifyUpdate()
+
             ACTION_DEMO -> {
                 model = DeviceRegistry.byId(prefs.lastModel) ?: DeviceRegistry.buds3
                 deviceName = model.displayName
@@ -88,7 +91,7 @@ class HeadsetService : Service() {
                 sessionJob?.cancel()
                 metaJob?.cancel()
                 currentAddress = "demo"
-                overlay.show(deviceName, model.id)
+                if (prefs.popup) overlay.show(deviceName, model.id)
                 sessionJob = scope.launch {
                     delay(800)
                     onBattery(BudsBattery(82, 79, 64, leftCharging = false, rightCharging = true))
@@ -113,7 +116,7 @@ class HeadsetService : Service() {
                 firstFrame = true
                 haveProtocol = false
                 startFg()
-                overlay.show(deviceName, model.id)
+                if (prefs.popup) overlay.show(deviceName, model.id)
                 if (battery.left >= 0 || battery.right >= 0 || battery.box >= 0) overlay.update(battery)
                 sessionJob?.cancel()
                 sessionJob = scope.launch { runSession(device) }
@@ -294,6 +297,7 @@ class HeadsetService : Service() {
     }
 
     override fun onDestroy() {
+        running = false
         BatteryBus.sink = null
         runCatching { unregisterReceiver(levelReceiver) }
         sessionJob?.cancel()
@@ -315,9 +319,11 @@ class HeadsetService : Service() {
         private const val BATTERY_POLL_MS = 45_000L
 
         @Volatile var rfcommUp = false
+        @Volatile var running = false
 
         const val ACTION_SET_ANC = "dev.ozaii.budsbridge.SET_ANC"
         const val ACTION_DEMO = "dev.ozaii.budsbridge.DEMO"
+        const val ACTION_REFRESH = "dev.ozaii.budsbridge.REFRESH"
         private const val EXTRA_DEVICE = "device"
         private const val EXTRA_ANC = "anc"
 

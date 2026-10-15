@@ -35,7 +35,7 @@ object NotificationHelper {
     fun build(ctx: Context, deviceName: String, b: BudsBattery, anc: AncMode?, showAnc: Boolean = true): Notification {
         if (Build.VERSION.SDK_INT >= 36) {
             val nm = ctx.getSystemService(NotificationManager::class.java)
-            if (nm.canPostPromotedNotifications()) return buildPromoted(ctx, deviceName, b, anc, showAnc)
+            if (Prefs(ctx).liveAlert && nm.canPostPromotedNotifications()) return buildPromoted(ctx, deviceName, b, anc, showAnc)
         }
         return buildCustom(ctx, deviceName, b, anc, showAnc)
     }

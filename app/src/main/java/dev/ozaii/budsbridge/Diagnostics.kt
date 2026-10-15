@@ -52,6 +52,7 @@ object Diagnostics {
 
         h("Uygulama durumu")
         sb.append("prefs: ${prefs.debug()}\n")
+        sb.append("HeadsetService çalışıyor: ${HeadsetService.running}, OPO kanalı bağlı: ${HeadsetService.rfcommUp}, MonitorService: ${MonitorService.running}\n")
         val packs = File(ctx.filesDir, "packs")
         sb.append("görsel paketleri:\n")
         packs.walkTopDown().filter { it.isFile }.forEach { sb.append("  ${it.relativeTo(packs)} (${it.length()} B)\n") }
@@ -97,8 +98,8 @@ object Diagnostics {
 
         h("logcat (yalnızca bu uygulama)")
         sb.append(runCatching {
-            val p = ProcessBuilder("logcat", "-d", "-t", "600").redirectErrorStream(true).start()
-            p.inputStream.bufferedReader().readText().takeLast(60_000)
+            val p = ProcessBuilder("logcat", "-d", "-t", "4000").redirectErrorStream(true).start()
+            p.inputStream.bufferedReader().readLines().filter { !it.contains("best_cookie") }.takeLast(400).joinToString("\n")
         }.getOrElse { "logcat okunamadı: ${it.message}" }).append('\n')
 
         h("HeyMelody / sistem melody paketleri")
@@ -114,8 +115,7 @@ object Diagnostics {
                 }
             }.onFailure { sb.append("provider listesi alınamadı ($pkg): ${it.message}\n") }
         }
-        sb.append(runCatching { HeyMelodyExtractor.run(ctx, DeviceRegistry.byId(prefs.lastModel), apply = false).report.take(6_000) }
-            .getOrElse { "kaynak taraması hata: ${it.message}" }).append('\n')
+        sb.append("(kaynak adı taraması rapordan çıkarıldı; gürültü yapıyordu)\n")
 
         return sb.toString().take(300_000)
     }
